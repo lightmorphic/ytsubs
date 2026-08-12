@@ -1,0 +1,6 @@
+build/venv/
+build/AppDir/
+build/app.squashfs
+build/*.AppImage
+__pycache__/
+*.pyc

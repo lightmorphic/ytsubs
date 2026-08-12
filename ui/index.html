@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YT Subs</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>YT Subs</h1>
+    <div class="header-right">
+      <span id="ytdlpBadge" class="ytdlp-badge">checking yt-dlp…</span>
+      <button id="themeToggle" class="theme-toggle" type="button" title="Switch between light and dark" aria-label="Switch between light and dark">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="columns">
+    <div class="col">
+      <section class="panel">
+        <label for="urlInput">YouTube URL</label>
+        <div class="row">
+          <input id="urlInput" type="text" placeholder="https://www.youtube.com/watch?v=…" autocomplete="off" />
+          <button id="fetchBtn" class="secondary" type="button">Find subtitles</button>
+        </div>
+        <p class="hint">Only the subtitle track is fetched — the video itself is never downloaded.</p>
+      </section>
+
+      <section id="resultsPanel" class="panel panel-grow" style="display:none">
+        <p id="videoTitle" class="video-title"></p>
+        <label>Choose a language</label>
+        <div id="langList" class="lang-list"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section id="savePanel" class="panel" style="display:none">
+        <label>Format</label>
+        <div id="formatList" class="format-list">
+          <button type="button" class="format-item selected" data-format="srt">SRT</button>
+          <button type="button" class="format-item" data-format="vtt">VTT</button>
+          <button type="button" class="format-item" data-format="txt">TXT</button>
+          <button type="button" class="format-item" data-format="raw">Raw</button>
+        </div>
+        <p class="hint" id="formatHint">Standard subtitle file with timestamps.</p>
+
+        <label style="margin-top:18px">Save to</label>
+        <div class="folder-row">
+          <span id="folderPath" class="folder-path"></span>
+          <button id="chooseFolderBtn" class="secondary" type="button">Change…</button>
+        </div>
+        <button id="downloadBtn" class="primary full-width" type="button" disabled style="margin-top:14px">Download subtitles</button>
+
+        <div id="status" class="status"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>Subtitles fetched via yt-dlp. No video is ever saved.</footer>
+
+  <div id="pasteMenu" class="paste-menu" hidden>
+    <button type="button" id="pasteMenuBtn">Paste</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

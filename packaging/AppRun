@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+PY="$(command -v python3 || true)"
+if [ -z "$PY" ]; then
+  echo "YT Subs needs python3 installed on this system." >&2
+  exit 1
+fi
+
+if ! "$PY" -c "import gi; gi.require_version('WebKit2', '4.1')" >/dev/null 2>&1; then
+  echo "YT Subs needs GTK's WebKit2 bindings installed on this system." >&2
+  echo "On Debian/Ubuntu:  sudo apt install gir1.2-webkit2-4.1 python3-gi" >&2
+  exit 1
+fi
+
+export PYTHONPATH="$HERE/usr/lib/pyapp${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONDONTWRITEBYTECODE=1
+exec "$PY" "$HERE/usr/app/app.py" "$@"

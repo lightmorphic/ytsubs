@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=YT Subs
+Comment=Download YouTube subtitles only, in any available language
+Exec=AppRun %u
+Icon=ytsubs
+Categories=Utility;AudioVideo;
+Terminal=false
