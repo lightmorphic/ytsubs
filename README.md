@@ -35,12 +35,18 @@ chmod +x ytsubs-x86_64.AppImage
 
 The AppImage bundles its Python dependencies (pywebview, yt-dlp, pip,
 requests) but uses the **host's** `python3` and GTK WebKit stack to draw
-the window, since those can't be sanely bundled. Needs:
+the window: `python3-gi`, `gir1.2-webkit2-4.1`, `libwebkit2gtk-4.1-0`.
+They're not bundled because that stack runs over 100MB on its own, and
+it's already installed on most Linux desktops.
 
-- `python3` (3.9+)
-- `python3-gi`, `gir1.2-webkit2-4.1`, `libwebkit2gtk-4.1-0`
-
-These are already present on most GNOME-based desktops. On Debian/Ubuntu:
+If they're missing, `AppRun` notices before opening the window and shows
+a native dialog (zenity, kdialog, or xmessage, whichever is available)
+explaining why and offering a one-click install via `pkexec` with the
+right package names for apt, dnf, pacman, or zypper. Cancel it and the
+app just doesn't launch; no window ever tries to open without its own
+GTK dependency underneath it. If none of those dialog tools are
+present, or the install fails, it falls back to printing the manual
+command, same as before:
 
 ```
 sudo apt install python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0

@@ -1,4 +1,9 @@
 #!/bin/bash
+# AppImages are meant to carry everything they need, but GTK + WebKit2GTK
+# together run well over 100MB and are already installed on most Linux
+# desktops, so they're not bundled here to keep the download small. If
+# they're missing, this offers a one-click install via a native dialog
+# instead of expecting anyone to read a README and run a command by hand.
 set -e
 HERE="$(dirname "$(readlink -f "${0}")")"
 
@@ -8,10 +13,75 @@ if [ -z "$PY" ]; then
   exit 1
 fi
 
-if ! "$PY" -c "import gi; gi.require_version('WebKit2', '4.1')" >/dev/null 2>&1; then
-  echo "YT Subs needs GTK's WebKit2 bindings installed on this system." >&2
-  echo "On Debian/Ubuntu:  sudo apt install gir1.2-webkit2-4.1 python3-gi" >&2
-  exit 1
+deps_ok() {
+  "$PY" -c "import gi; gi.require_version('WebKit2', '4.1'); from gi.repository import WebKit2" >/dev/null 2>&1
+}
+
+# Pick whichever dialog tool is actually on this system. zenity/kdialog give
+# a real Install/Cancel choice; xmessage is a last-resort fallback that can
+# still return a yes/no via its exit code.
+dialog_tool() {
+  if command -v zenity >/dev/null 2>&1; then echo zenity
+  elif command -v kdialog >/dev/null 2>&1; then echo kdialog
+  elif command -v xmessage >/dev/null 2>&1; then echo xmessage
+  else echo none
+  fi
+}
+
+ask_to_install() {
+  local msg="YT Subs needs GTK's WebKit2 package to draw its window.\n\nIt isn't bundled in the AppImage because it (and its dependencies) run over 100MB, and it's already installed on most Linux desktops. Install it now?"
+  case "$(dialog_tool)" in
+    zenity)
+      zenity --question --title="YT Subs" --width=360 --text="$msg" --ok-label="Install" --cancel-label="Cancel"
+      ;;
+    kdialog)
+      kdialog --title "YT Subs" --yesno "$msg" --yes-label "Install" --no-label "Cancel"
+      ;;
+    xmessage)
+      xmessage -center -buttons "Install:0,Cancel:1" "$msg"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+show_message() {
+  case "$(dialog_tool)" in
+    zenity) zenity --info --title="YT Subs" --width=360 --text="$1" ;;
+    kdialog) kdialog --title "YT Subs" --msgbox "$1" ;;
+    xmessage) xmessage -center "$1" ;;
+    *) echo "$1" >&2 ;;
+  esac
+}
+
+# Maps to each distro's own package names for the same two things:
+# PyGObject and the WebKit2GTK 4.1 GObject-introspection bindings.
+install_deps() {
+  if command -v apt-get >/dev/null 2>&1; then
+    pkexec apt-get install -y python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0
+  elif command -v dnf >/dev/null 2>&1; then
+    pkexec dnf install -y python3-gobject webkit2gtk4.1
+  elif command -v pacman >/dev/null 2>&1; then
+    pkexec pacman -S --noconfirm --needed python-gobject webkit2gtk-4.1
+  elif command -v zypper >/dev/null 2>&1; then
+    pkexec zypper install -y python3-gobject webkit2gtk3-soup2
+  else
+    return 1
+  fi
+}
+
+if ! deps_ok; then
+  if ask_to_install; then
+    if install_deps && deps_ok; then
+      show_message "Installed. Launching YT Subs…"
+    else
+      show_message "Couldn't install it automatically on this system.\n\nOn Debian/Ubuntu, run:\nsudo apt install python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0\n\nSee the README for other distros."
+      exit 1
+    fi
+  else
+    exit 1
+  fi
 fi
 
 export PYTHONPATH="$HERE/usr/lib/pyapp${PYTHONPATH:+:$PYTHONPATH}"

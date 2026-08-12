@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.2
+
+- AppRun now checks for GTK's WebKit2 bindings before opening the window.
+  If missing, it offers a one-click install via a native dialog
+  (zenity, kdialog, or xmessage) instead of just failing with a
+  message telling you to run a command yourself.
+
 ## v1.0.1
 
 - Fix a duplicate-id bug where the yt-dlp update button and the app
