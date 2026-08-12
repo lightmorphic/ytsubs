@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YT Subs: download YouTube subtitles, not the video</title>
+<meta name="description" content="A tiny Linux desktop app that downloads a YouTube video's subtitles in SRT, VTT, TXT, or Raw format. The video itself is never fetched." />
+<link rel="icon" href="images/favicon.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="site-nav">
+  <a class="nav-brand" href="#top">
+    <img src="images/favicon.png" alt="" />
+    YT Subs
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-label">Features</a>
+    <a href="#formats" class="nav-label">Formats</a>
+    <a href="https://github.com/lightmorphic/ytsubs" class="nav-label">GitHub</a>
+    <a href="#download" class="nav-cta">Download</a>
+  </div>
+</nav>
+
+<main>
+
+  <section class="hero" id="top">
+    <div class="hero-grid">
+      <div>
+        <span class="eyebrow">Free · Linux · No install</span>
+        <h1>Get the subtitles.<br />Skip the video.</h1>
+        <p class="lede">
+          Paste a YouTube URL, pick a language and a format, get a subtitle
+          file. That's the whole app. The video is never downloaded,
+          <code>skip_download</code> is hardcoded on.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary" href="https://github.com/lightmorphic/ytsubs/releases/latest/download/ytsubs-x86_64.AppImage">Download for Linux</a>
+          <a class="btn secondary" href="https://github.com/lightmorphic/ytsubs">View on GitHub</a>
+        </div>
+      </div>
+      <div class="hero-shot">
+        <img src="images/screenshot-dark.png" alt="YT Subs showing a fetched video's language list on the left and format picker with an SRT, VTT, TXT, and Raw choice on the right" width="1760" height="1200" />
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <h2>Small on purpose</h2>
+    <p class="section-lede">No account, no telemetry, no browser required. One window, one job.</p>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        </div>
+        <h3>Subtitles only</h3>
+        <p>The video track is never requested from YouTube. Nothing to wait for, nothing large to store.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
+        <h3>English listed first</h3>
+        <p>Every available language shows up, manual and auto-generated tracks both included, English sorted to the top.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        </div>
+        <h3>Keeps itself current</h3>
+        <p>Checks yt-dlp and its own version on a schedule. When YouTube changes something, an update is one click away.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </div>
+        <h3>Light and dark</h3>
+        <p>Follows the desktop by default, with a toggle if it guesses wrong.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="formats">
+    <h2>Four formats, one download</h2>
+    <p class="section-lede">Pick the one that fits what you're doing with it.</p>
+    <div class="feature-grid">
+      <div class="feature">
+        <h3>SRT</h3>
+        <p>Standard subtitle file with timestamps. Works everywhere.</p>
+      </div>
+      <div class="feature">
+        <h3>VTT</h3>
+        <p>WebVTT, the format most web video players expect natively.</p>
+      </div>
+      <div class="feature">
+        <h3>TXT</h3>
+        <p>Plain transcript. Timestamps and formatting stripped out, just the words.</p>
+      </div>
+      <div class="feature">
+        <h3>Raw</h3>
+        <p>Whatever YouTube actually served, unconverted.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="download-panel">
+      <h2>Download YT Subs</h2>
+      <p class="lede" style="margin:0 auto">Single AppImage. No install, no Docker, no account.</p>
+      <div class="cta-row" style="justify-content:center; margin-top:24px">
+        <a class="btn primary" href="https://github.com/lightmorphic/ytsubs/releases/latest/download/ytsubs-x86_64.AppImage">Download for Linux</a>
+      </div>
+      <div class="requirements">
+        Needs <code>python3</code> (3.9+) and the host's GTK WebKit stack.
+        On Debian/Ubuntu: <code>sudo apt install python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0</code>.
+        Already present on most GNOME-based desktops. Full details and
+        source on the <a href="https://github.com/lightmorphic/ytsubs">GitHub repo</a>.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p><a href="https://github.com/lightmorphic/ytsubs">Source on GitHub</a> · Free software</p>
+</footer>
+
+</body>
+</html>
