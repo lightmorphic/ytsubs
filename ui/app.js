@@ -7,7 +7,7 @@ const el = (id) => document.getElementById(id);
 const FORMAT_HINTS = {
   srt: "Standard subtitle file with timestamps.",
   vtt: "WebVTT subtitle file with timestamps.",
-  txt: "Plain text transcript — no timestamps, no formatting.",
+  txt: "Plain text transcript, no timestamps or formatting.",
   raw: "Whatever format YouTube served, unconverted (usually VTT).",
 };
 
@@ -42,11 +42,11 @@ async function refreshYtdlpBadge() {
       badge.textContent = `yt-dlp ${status.installed} (couldn't check for updates)`;
     } else if (status.upToDate) {
       badge.className = "ytdlp-badge ok";
-      badge.textContent = `yt-dlp ${status.installed} — up to date`;
+      badge.textContent = `yt-dlp ${status.installed}, up to date`;
     } else {
       badge.className = "ytdlp-badge stale";
-      badge.innerHTML = `yt-dlp ${status.installed} → ${status.latest} available <button id="updateBtn" type="button">Update</button>`;
-      el("updateBtn").addEventListener("click", updateYtdlp);
+      badge.innerHTML = `yt-dlp ${status.installed} → ${status.latest} available <button id="ytdlpUpdateBtn" type="button">Update</button>`;
+      el("ytdlpUpdateBtn").addEventListener("click", updateYtdlp);
     }
   } catch (e) {
     badge.className = "ytdlp-badge err";
@@ -62,7 +62,7 @@ async function updateYtdlp() {
     const result = await window.pywebview.api.update_ytdlp();
     if (result.ok) {
       badge.className = "ytdlp-badge ok";
-      badge.textContent = "Updated — restart YT Subs to use the new version";
+      badge.textContent = "Updated, restart YT Subs to use the new version";
     } else {
       badge.className = "ytdlp-badge err";
       badge.textContent = `Update failed: ${result.error || "unknown error"}`;
@@ -285,7 +285,7 @@ async function pollDownloadState() {
     }
     if (state.status === "downloaded") {
       setUpdateButton("Restart to finish updating", "install");
-      setVersionDot("available", "Update downloaded — restart to finish installing.");
+      setVersionDot("available", "Update downloaded, restart to finish installing.");
       break;
     }
     if (state.status === "error") {
@@ -326,7 +326,7 @@ function initAppUpdate() {
 }
 
 window.addEventListener("pywebviewready", () => {
-  // Each step runs independently — one throwing must never stop the rest
+  // Each step runs independently, one throwing must never stop the rest
   // of the UI from wiring up (a WebKit quirk like a missing browser API
   // has broken every listener registered after it here before).
   const steps = [

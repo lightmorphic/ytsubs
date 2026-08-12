@@ -109,9 +109,6 @@ def _github_token():
 
 
 class Api:
-    def get_app_version(self):
-        return APP_VERSION
-
     def check_for_app_update(self):
         try:
             headers = {"Accept": "application/vnd.github+json"}

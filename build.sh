@@ -19,7 +19,7 @@ chmod +x "$APPDIR/AppRun"
 
 python3 -m venv --clear /tmp/ytsubs-build-venv
 source /tmp/ytsubs-build-venv/bin/activate
-pip install --quiet --target "$APPDIR/usr/lib/pyapp" --no-compile pywebview yt-dlp pip requests
+pip install --quiet --upgrade --target "$APPDIR/usr/lib/pyapp" --no-compile pywebview yt-dlp pip requests
 deactivate
 rm -rf /tmp/ytsubs-build-venv
 
