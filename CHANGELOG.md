@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.0.1
+
+- Fix a duplicate-id bug where the yt-dlp update button and the app
+  update button could interfere with each other.
+- Bump the bundled pip (used by the yt-dlp self-updater) to close 6
+  known CVEs that were in the version the build had been silently
+  pinning to.
+- Copy and documentation cleanup, no other behaviour changes.
+
 ## v1.0.0
 
 - YouTube subtitle download in SRT, VTT, TXT (plain transcript), or Raw format. The video itself is never fetched.
