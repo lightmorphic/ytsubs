@@ -4,3 +4,4 @@ build/app.squashfs
 build/*.AppImage
 __pycache__/
 *.pyc
+.claude/

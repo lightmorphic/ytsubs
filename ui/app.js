@@ -231,6 +231,100 @@ function initPasteMenu() {
   window.addEventListener("blur", hideMenu);
 }
 
+const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+let latestUpdateInfo = null;
+
+function setVersionDot(cls, tooltip) {
+  const dot = el("versionDot");
+  dot.className = `version-dot ${cls}`;
+  el("appVersion").title = tooltip;
+}
+
+function setUpdateButton(label, action, disabled) {
+  const btn = el("updateBtn");
+  btn.classList.remove("hidden");
+  btn.disabled = !!disabled;
+  btn.dataset.action = action || "";
+  btn.textContent = label;
+}
+
+function hideUpdateButton() {
+  el("updateBtn").classList.add("hidden");
+}
+
+async function checkForAppUpdate() {
+  setVersionDot("checking", "Checking for updates…");
+  try {
+    const result = await window.pywebview.api.check_for_app_update();
+    el("versionText").textContent = `v${result.installed}`;
+    if (result.status === "available") {
+      latestUpdateInfo = result;
+      setVersionDot("available", `Update available: v${result.latest} (click to re-check)`);
+      setUpdateButton(`Update to v${result.latest}`, "download");
+    } else if (result.status === "up-to-date") {
+      setVersionDot("up-to-date", `You're on the latest version, v${result.installed} (click to re-check)`);
+      hideUpdateButton();
+    } else {
+      setVersionDot("error", "Couldn't reach GitHub to check for updates (click to retry)");
+      hideUpdateButton();
+    }
+  } catch (e) {
+    setVersionDot("error", "Couldn't reach GitHub to check for updates (click to retry)");
+    hideUpdateButton();
+  }
+}
+
+async function pollDownloadState() {
+  while (true) {
+    await new Promise((r) => setTimeout(r, 500));
+    let state;
+    try {
+      state = await window.pywebview.api.get_download_state();
+    } catch (e) {
+      break;
+    }
+    if (state.status === "downloaded") {
+      setUpdateButton("Restart to finish updating", "install");
+      setVersionDot("available", "Update downloaded — restart to finish installing.");
+      break;
+    }
+    if (state.status === "error") {
+      setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
+      showStatus("error", `Update download failed: ${state.error || "unknown error"}`);
+      break;
+    }
+  }
+}
+
+async function handleUpdateButtonClick() {
+  const btn = el("updateBtn");
+  const action = btn.dataset.action;
+  if (action === "download" && latestUpdateInfo) {
+    setUpdateButton("Downloading…", "downloading", true);
+    try {
+      const result = await window.pywebview.api.download_app_update(latestUpdateInfo.downloadUrl);
+      if (result.ok) {
+        pollDownloadState();
+      } else {
+        setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
+        showStatus("error", result.error || "Couldn't start the download.");
+      }
+    } catch (e) {
+      setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
+    }
+  } else if (action === "install") {
+    btn.disabled = true;
+    await window.pywebview.api.restart_app().catch(() => {});
+  }
+}
+
+function initAppUpdate() {
+  checkForAppUpdate();
+  el("appVersion").addEventListener("click", checkForAppUpdate);
+  el("updateBtn").addEventListener("click", handleUpdateButtonClick);
+  setInterval(checkForAppUpdate, UPDATE_CHECK_INTERVAL_MS);
+}
+
 window.addEventListener("pywebviewready", () => {
   // Each step runs independently — one throwing must never stop the rest
   // of the UI from wiring up (a WebKit quirk like a missing browser API
@@ -238,6 +332,7 @@ window.addEventListener("pywebviewready", () => {
   const steps = [
     initTheme,
     initPasteMenu,
+    initAppUpdate,
     refreshYtdlpBadge,
     () => el("fetchBtn").addEventListener("click", fetchSubtitles),
     () => el("urlInput").addEventListener("keydown", (e) => { if (e.key === "Enter") fetchSubtitles(); }),

@@ -1,11 +1,18 @@
 import json
 import os
 import re
+import subprocess
 import sys
+import tempfile
+import threading
 import urllib.request
 from pathlib import Path
 
 import webview
+
+APP_VERSION = "1.0.0"
+UPDATE_REPO = "lightmorphic/ytsubs"
+RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 
 APP_DIR = Path.home() / ".local" / "share" / "ytsubs"
 LIB_DIR = APP_DIR / "pylibs"
@@ -68,7 +75,98 @@ def subtitle_file_to_text(path):
     return "\n".join(deduped) + "\n"
 
 
+def _is_newer(candidate, current):
+    def parts(v):
+        out = []
+        for piece in v.strip().lstrip("v").replace("-", ".").split(".")[:3]:
+            try:
+                out.append(int(piece))
+            except ValueError:
+                out.append(0)
+        return out
+
+    a, b = parts(candidate), parts(current)
+    length = max(len(a), len(b))
+    a += [0] * (length - len(a))
+    b += [0] * (length - len(b))
+    return a > b
+
+
+_download_state = {"status": "idle", "error": None}
+
+
 class Api:
+    def get_app_version(self):
+        return APP_VERSION
+
+    def check_for_app_update(self):
+        try:
+            req = urllib.request.Request(RELEASES_API, headers={"Accept": "application/vnd.github+json"})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                release = json.load(resp)
+            latest = (release.get("tag_name") or "").lstrip("v")
+            if not latest:
+                return {"status": "error", "installed": APP_VERSION}
+            asset = next(
+                (a for a in release.get("assets", []) if a.get("name", "").endswith(".AppImage")),
+                None,
+            )
+            if _is_newer(latest, APP_VERSION) and asset:
+                return {
+                    "status": "available",
+                    "installed": APP_VERSION,
+                    "latest": latest,
+                    "downloadUrl": asset["browser_download_url"],
+                }
+            return {"status": "up-to-date", "installed": APP_VERSION, "latest": latest}
+        except Exception:
+            return {"status": "error", "installed": APP_VERSION}
+
+    def download_app_update(self, url):
+        appimage_path = os.environ.get("APPIMAGE")
+        if not appimage_path:
+            return {"ok": False, "error": "Only the packaged AppImage can update itself."}
+
+        def worker():
+            _download_state["status"] = "downloading"
+            _download_state["error"] = None
+            try:
+                target_dir = os.path.dirname(appimage_path)
+                fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=".ytsubs-update-")
+                try:
+                    req = urllib.request.Request(url, headers={"Accept": "application/octet-stream"})
+                    with urllib.request.urlopen(req, timeout=30) as resp, os.fdopen(fd, "wb") as out:
+                        while True:
+                            chunk = resp.read(1024 * 256)
+                            if not chunk:
+                                break
+                            out.write(chunk)
+                    os.chmod(tmp_path, 0o755)
+                    os.replace(tmp_path, appimage_path)
+                except Exception:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+                    raise
+                _download_state["status"] = "downloaded"
+            except Exception as e:
+                _download_state["status"] = "error"
+                _download_state["error"] = str(e)
+
+        _download_state["status"] = "downloading"
+        threading.Thread(target=worker, daemon=True).start()
+        return {"ok": True}
+
+    def get_download_state(self):
+        return dict(_download_state)
+
+    def restart_app(self):
+        appimage_path = os.environ.get("APPIMAGE")
+        if not appimage_path:
+            return {"ok": False, "error": "Only the packaged AppImage can restart itself."}
+        subprocess.Popen([appimage_path], start_new_session=True, close_fds=True)
+        threading.Timer(0.3, lambda: os._exit(0)).start()
+        return {"ok": True}
+
     def get_ytdlp_status(self):
         try:
             with urllib.request.urlopen("https://pypi.org/pypi/yt-dlp/json", timeout=6) as r:
