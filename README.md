@@ -83,10 +83,23 @@ for a cached copy under `~/.cache/electron-builder/appimage/*/linux-x64/`
 
 ## Releasing a new version
 
+Every release publishes **two** copies of the same build: a version-stamped
+file for anyone grabbing a specific release off the GitHub releases page, and
+a stable, unversioned filename that the in-app updater always fetches (so it
+never has to guess which asset is the "real" one on a release with more than
+one `.AppImage` attached).
+
 1. Bump `APP_VERSION` in `app.py`.
 2. `./build.sh`
 3. Commit, tag `vX.Y.Z`, push.
-4. `gh release create vX.Y.Z build/ytsubs-x86_64.AppImage --title vX.Y.Z --notes "..."`
+4. Copy the build to a version-stamped name, then upload both:
+   ```
+   cp build/ytsubs-x86_64.AppImage build/ytsubs-X.Y.Z-x86_64.AppImage
+   gh release create vX.Y.Z \
+     build/ytsubs-x86_64.AppImage \
+     build/ytsubs-X.Y.Z-x86_64.AppImage \
+     --title vX.Y.Z --notes "..."
+   ```
    (with `GH_TOKEN` set to a token that has write access to this repo).
 
 ## Layout

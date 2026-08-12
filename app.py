@@ -13,6 +13,10 @@ import webview
 APP_VERSION = "1.0.1"
 UPDATE_REPO = "lightmorphic/ytsubs"
 RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
+# Every release publishes two assets: this stable name (what the updater
+# always fetches) and a version-stamped copy (for anyone grabbing a specific
+# release directly off the GitHub releases page).
+UPDATE_ASSET_NAME = "ytsubs-x86_64.AppImage"
 
 APP_DIR = Path.home() / ".local" / "share" / "ytsubs"
 LIB_DIR = APP_DIR / "pylibs"
@@ -122,7 +126,7 @@ class Api:
             if not latest:
                 return {"status": "error", "installed": APP_VERSION}
             asset = next(
-                (a for a in release.get("assets", []) if a.get("name", "").endswith(".AppImage")),
+                (a for a in release.get("assets", []) if a.get("name") == UPDATE_ASSET_NAME),
                 None,
             )
             if _is_newer(latest, APP_VERSION) and asset:
