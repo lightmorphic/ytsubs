@@ -5,7 +5,7 @@ YT Subs is a local desktop app. It has no server component and holds no user acc
 ## What the app talks to
 
 - `pypi.org`: checks the installed yt-dlp version, and installs updates via pip if you click Update.
-- `api.github.com`: checks this repo's releases for app updates, and downloads the new AppImage if you click Update. This repo is private, so this call uses a bearer token read from `~/.ssh/ytsubs-token` if present; without it, the check just fails closed (shows a red "can't reach GitHub" status).
+- `api.github.com`: checks this repo's releases for app updates, and downloads the new AppImage if you click Update. This repo is public, so the check works unauthenticated. On the maintainer's own machine, a bearer token at `9-Claude/Tokens/ytsubs-token` is used if present, purely to avoid the low unauthenticated rate limit; that path won't exist on anyone else's machine.
 - YouTube, via yt-dlp: fetching subtitle tracks is the app's entire purpose. `skip_download` is always on; the video itself is never requested.
 
 All three are plain HTTPS requests. Nothing else calls out, and the app doesn't run a network-facing server (pywebview's local HTTP server for the UI binds to `127.0.0.1` only).
@@ -16,4 +16,4 @@ Clicking Update overwrites the running AppImage file in place: it downloads to a
 
 ## Reporting an issue
 
-This is a personal-use tool with a private repo. If you find a problem, open an issue on this repo or contact the maintainer directly.
+This is a personal-use tool. If you find a problem, open an issue on this repo or contact the maintainer directly.

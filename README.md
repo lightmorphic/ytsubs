@@ -65,12 +65,12 @@ The yt-dlp badge in the header shows:
 
 ## Keeping the app itself current
 
-`ytsubs` is a private repo, so the update check needs a credential to
-read its releases. It looks for a repo-scoped GitHub token at
-`~/.ssh/ytsubs-token` and uses it as a bearer token. Without that file
-present, the version dot shows red ("can't reach GitHub") rather than
-failing loudly, since most people running this build won't have that
-token and shouldn't need one for the app to otherwise work.
+`ytsubs` is a public repo, so the update check works with no credential
+at all. If a repo-scoped GitHub token happens to be sitting at
+`9-Claude/Tokens/ytsubs-token` in the maintainer's home directory, it's
+used as a bearer token to avoid the low unauthenticated GitHub API rate
+limit; on anyone else's machine that path just won't exist, and the
+check runs unauthenticated instead.
 
 ## Rebuilding the AppImage
 

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import webview
 
-APP_VERSION = "1.0.2"
+APP_VERSION = "1.0.3"
 UPDATE_REPO = "lightmorphic/ytsubs"
 RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 # Every release publishes two assets: this stable name (what the updater
@@ -98,11 +98,11 @@ def _is_newer(candidate, current):
 
 _download_state = {"status": "idle", "error": None}
 
-# The ytsubs GitHub repo is private, so checking its releases needs a
-# credential. This mirrors how the repo itself is managed: a repo-scoped
-# personal access token dropped in ~/.ssh/ytsubs-token. Without it here,
-# the update check just reports "can't reach GitHub".
-GITHUB_TOKEN_FILE = Path.home() / ".ssh" / "ytsubs-token"
+# The repo is public, so this token isn't required for the update check
+# to work, it just avoids the low, unauthenticated GitHub API rate limit.
+# Only ever found on the maintainer's own machine; everyone else's update
+# check runs unauthenticated, which works fine against a public repo.
+GITHUB_TOKEN_FILE = Path.home() / "9-Claude" / "Tokens" / "ytsubs-token"
 
 
 def _github_token():
@@ -134,8 +134,9 @@ class Api:
                     "status": "available",
                     "installed": APP_VERSION,
                     "latest": latest,
-                    # The API asset URL (not browser_download_url) is what
-                    # actually works with a token for a private repo's assets.
+                    # The API asset URL works with or without a token, and
+                    # with a token still works if this repo ever goes
+                    # private again. browser_download_url wouldn't.
                     "downloadUrl": asset["url"],
                 }
             return {"status": "up-to-date", "installed": APP_VERSION, "latest": latest}

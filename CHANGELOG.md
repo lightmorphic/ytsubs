@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.3
+
+- Move the maintainer's optional GitHub token path from `~/.ssh/ytsubs-token`
+  to `9-Claude/Tokens/ytsubs-token`. No effect for anyone else; the repo
+  is public and the update check already works with no token at all.
+
 ## v1.0.2
 
 - AppRun now checks for GTK's WebKit2 bindings before opening the window.
