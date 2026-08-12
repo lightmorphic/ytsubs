@@ -10,7 +10,7 @@ from pathlib import Path
 
 import webview
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.1.0"
 UPDATE_REPO = "lightmorphic/ytsubs"
 RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 # Every release publishes two assets: this stable name (what the updater
@@ -96,7 +96,7 @@ def _is_newer(candidate, current):
     return a > b
 
 
-_download_state = {"status": "idle", "error": None}
+_download_state = {"status": "idle", "error": None, "progress": 0.0}
 
 # The repo is public, so this token isn't required for the update check
 # to work, it just avoids the low, unauthenticated GitHub API rate limit.
@@ -151,6 +151,7 @@ class Api:
         def worker():
             _download_state["status"] = "downloading"
             _download_state["error"] = None
+            _download_state["progress"] = 0.0
             try:
                 target_dir = os.path.dirname(appimage_path)
                 fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=".ytsubs-update-")
@@ -161,17 +162,23 @@ class Api:
                         headers["Authorization"] = f"Bearer {token}"
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req, timeout=30) as resp, os.fdopen(fd, "wb") as out:
+                        total = int(resp.headers.get("Content-Length") or 0)
+                        done = 0
                         while True:
                             chunk = resp.read(1024 * 256)
                             if not chunk:
                                 break
                             out.write(chunk)
+                            done += len(chunk)
+                            if total:
+                                _download_state["progress"] = done / total
                     os.chmod(tmp_path, 0o755)
                     os.replace(tmp_path, appimage_path)
                 except Exception:
                     if os.path.exists(tmp_path):
                         os.remove(tmp_path)
                     raise
+                _download_state["progress"] = 1.0
                 _download_state["status"] = "downloaded"
             except Exception as e:
                 _download_state["status"] = "error"

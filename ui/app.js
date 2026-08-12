@@ -231,97 +231,94 @@ function initPasteMenu() {
   window.addEventListener("blur", hideMenu);
 }
 
+// Charlie's unified update-status widget: one dot, colour + overlay icon
+// are the entire interface. No separate check/download/restart buttons.
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+const RING_CIRCUMFERENCE = 50.27; // 2 * PI * r, r=8
+
+let updateState = "unknown"; // unknown | up-to-date | available | downloading | ready | error
 let latestUpdateInfo = null;
 
-function setVersionDot(cls, tooltip) {
-  const dot = el("versionDot");
-  dot.className = `version-dot ${cls}`;
-  el("appVersion").title = tooltip;
+function setUpdateState(state, tooltip) {
+  updateState = state;
+  const dot = el("updateDot");
+  dot.className = `update-dot state-${state}`;
+  dot.title = tooltip;
+  dot.setAttribute("aria-label", tooltip);
+  dot.disabled = state === "downloading" || state === "error" || state === "unknown";
 }
 
-function setUpdateButton(label, action, disabled) {
-  const btn = el("updateBtn");
-  btn.classList.remove("hidden");
-  btn.disabled = !!disabled;
-  btn.dataset.action = action || "";
-  btn.textContent = label;
-}
-
-function hideUpdateButton() {
-  el("updateBtn").classList.add("hidden");
+function setRingProgress(fraction) {
+  const ring = document.querySelector("#updateDot .ring-progress");
+  const offset = RING_CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
+  ring.style.strokeDashoffset = String(offset);
 }
 
 async function checkForAppUpdate() {
-  setVersionDot("checking", "Checking for updates…");
   try {
     const result = await window.pywebview.api.check_for_app_update();
     el("versionText").textContent = `v${result.installed}`;
     if (result.status === "available") {
       latestUpdateInfo = result;
-      setVersionDot("available", `Update available: v${result.latest} (click to re-check)`);
-      setUpdateButton(`Update to v${result.latest}`, "download");
+      setUpdateState("available", "Update available, click to download");
     } else if (result.status === "up-to-date") {
-      setVersionDot("up-to-date", `You're on the latest version, v${result.installed} (click to re-check)`);
-      hideUpdateButton();
+      setUpdateState("up-to-date", "Up to date");
     } else {
-      setVersionDot("error", "Couldn't reach GitHub to check for updates (click to retry)");
-      hideUpdateButton();
+      setUpdateState("error", "Can't connect to GitHub");
     }
   } catch (e) {
-    setVersionDot("error", "Couldn't reach GitHub to check for updates (click to retry)");
-    hideUpdateButton();
+    setUpdateState("error", "Can't connect to GitHub");
   }
 }
 
-async function pollDownloadState() {
+async function downloadUpdate() {
+  if (!latestUpdateInfo) return;
+  setUpdateState("downloading", "Downloading…");
+  setRingProgress(0);
+  try {
+    const result = await window.pywebview.api.download_app_update(latestUpdateInfo.downloadUrl);
+    if (!result.ok) {
+      showStatus("error", result.error || "Couldn't start the download.");
+      setUpdateState("available", "Update available, click to download");
+      return;
+    }
+  } catch (e) {
+    setUpdateState("available", "Update available, click to download");
+    return;
+  }
+
   while (true) {
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 300));
     let state;
     try {
       state = await window.pywebview.api.get_download_state();
     } catch (e) {
       break;
     }
+    setRingProgress(state.progress || 0);
     if (state.status === "downloaded") {
-      setUpdateButton("Restart to finish updating", "install");
-      setVersionDot("available", "Update downloaded, restart to finish installing.");
+      setUpdateState("ready", "Click to restart the app");
       break;
     }
     if (state.status === "error") {
-      setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
       showStatus("error", `Update download failed: ${state.error || "unknown error"}`);
+      setUpdateState("available", "Update available, click to download");
       break;
     }
   }
 }
 
-async function handleUpdateButtonClick() {
-  const btn = el("updateBtn");
-  const action = btn.dataset.action;
-  if (action === "download" && latestUpdateInfo) {
-    setUpdateButton("Downloading…", "downloading", true);
-    try {
-      const result = await window.pywebview.api.download_app_update(latestUpdateInfo.downloadUrl);
-      if (result.ok) {
-        pollDownloadState();
-      } else {
-        setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
-        showStatus("error", result.error || "Couldn't start the download.");
-      }
-    } catch (e) {
-      setUpdateButton(`Update to v${latestUpdateInfo.latest}`, "download");
-    }
-  } else if (action === "install") {
-    btn.disabled = true;
-    await window.pywebview.api.restart_app().catch(() => {});
-  }
+async function restartApp() {
+  el("updateDot").disabled = true;
+  await window.pywebview.api.restart_app().catch(() => {});
 }
 
 function initAppUpdate() {
   checkForAppUpdate();
-  el("appVersion").addEventListener("click", checkForAppUpdate);
-  el("updateBtn").addEventListener("click", handleUpdateButtonClick);
+  el("updateDot").addEventListener("click", () => {
+    if (updateState === "available") downloadUpdate();
+    else if (updateState === "ready") restartApp();
+  });
   setInterval(checkForAppUpdate, UPDATE_CHECK_INTERVAL_MS);
 }
 

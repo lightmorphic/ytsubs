@@ -8,13 +8,23 @@
 </head>
 <body>
   <header>
-    <h1>YT Subs</h1>
-    <div class="header-right">
-      <button id="appVersion" class="app-version" type="button" title="Checking for updates…">
-        <span id="versionDot" class="version-dot checking"></span>
-        <span id="versionText">v…</span>
+    <div class="app-title">
+      <h1><a id="appLink" class="app-link" href="https://ytsubs.lightmorphic.co.uk" target="_blank" rel="noopener">YT Subs <span id="versionText">v…</span></a></h1>
+      <button id="updateDot" class="update-dot" type="button" title="Checking…" aria-label="Update status">
+        <svg class="ring" viewBox="0 0 20 20" aria-hidden="true">
+          <circle class="ring-track" cx="10" cy="10" r="8"></circle>
+          <circle class="ring-progress" cx="10" cy="10" r="8"></circle>
+        </svg>
+        <svg class="overlay-icon icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4v12M6 12l6 6 6-6"></path>
+        </svg>
+        <svg class="overlay-icon icon-restart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+          <path d="M21 3v6h-6"></path>
+        </svg>
       </button>
-      <button id="updateBtn" class="update-btn hidden" type="button"></button>
+    </div>
+    <div class="header-right">
       <span id="ytdlpBadge" class="ytdlp-badge">checking yt-dlp…</span>
       <button id="themeToggle" class="theme-toggle" type="button" title="Switch between light and dark" aria-label="Switch between light and dark">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

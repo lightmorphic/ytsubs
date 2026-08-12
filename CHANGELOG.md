@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.1.0
+
+- Replace the separate version badge and Update button with Charlie's
+  unified update-status widget: the app name and version are now one
+  link out to ytsubs.lightmorphic.co.uk, immediately followed by a
+  single dot that is the entire update UI. Green means up to date,
+  yellow with a download icon means an update is available (click to
+  fetch it), a hollow ring traces download progress, green with a
+  restart icon means it's ready (click to restart), red means the
+  update check couldn't reach GitHub.
+
 ## v1.0.3
 
 - Move the maintainer's optional GitHub token path from `~/.ssh/ytsubs-token`
