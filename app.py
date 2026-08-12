@@ -94,6 +94,19 @@ def _is_newer(candidate, current):
 
 _download_state = {"status": "idle", "error": None}
 
+# The ytsubs GitHub repo is private, so checking its releases needs a
+# credential. This mirrors how the repo itself is managed: a repo-scoped
+# personal access token dropped in ~/.ssh/ytsubs-token. Without it here,
+# the update check just reports "can't reach GitHub".
+GITHUB_TOKEN_FILE = Path.home() / ".ssh" / "ytsubs-token"
+
+
+def _github_token():
+    try:
+        return GITHUB_TOKEN_FILE.read_text(encoding="utf-8").strip() or None
+    except Exception:
+        return None
+
 
 class Api:
     def get_app_version(self):
@@ -101,7 +114,11 @@ class Api:
 
     def check_for_app_update(self):
         try:
-            req = urllib.request.Request(RELEASES_API, headers={"Accept": "application/vnd.github+json"})
+            headers = {"Accept": "application/vnd.github+json"}
+            token = _github_token()
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+            req = urllib.request.Request(RELEASES_API, headers=headers)
             with urllib.request.urlopen(req, timeout=6) as resp:
                 release = json.load(resp)
             latest = (release.get("tag_name") or "").lstrip("v")
@@ -116,7 +133,9 @@ class Api:
                     "status": "available",
                     "installed": APP_VERSION,
                     "latest": latest,
-                    "downloadUrl": asset["browser_download_url"],
+                    # The API asset URL (not browser_download_url) is what
+                    # actually works with a token for a private repo's assets.
+                    "downloadUrl": asset["url"],
                 }
             return {"status": "up-to-date", "installed": APP_VERSION, "latest": latest}
         except Exception:
@@ -134,7 +153,11 @@ class Api:
                 target_dir = os.path.dirname(appimage_path)
                 fd, tmp_path = tempfile.mkstemp(dir=target_dir, prefix=".ytsubs-update-")
                 try:
-                    req = urllib.request.Request(url, headers={"Accept": "application/octet-stream"})
+                    headers = {"Accept": "application/octet-stream"}
+                    token = _github_token()
+                    if token:
+                        headers["Authorization"] = f"Bearer {token}"
+                    req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req, timeout=30) as resp, os.fdopen(fd, "wb") as out:
                         while True:
                             chunk = resp.read(1024 * 256)
