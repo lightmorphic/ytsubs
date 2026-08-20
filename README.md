@@ -82,10 +82,17 @@ Regenerates `build/ytsubs-x86_64.AppImage` from `app.py` and `ui/`.
 Source for the AppImage wrapper (AppRun script, .desktop file, icon)
 lives in `packaging/`.
 
-The build needs `mksquashfs` and an AppImage `runtime-x64` stub. If you
-have `appimagetool` on PATH it'll use that instead, otherwise it looks
-for a cached copy under `~/.cache/electron-builder/appimage/*/linux-x64/`
-(left behind by any electron-builder AppImage build on this machine).
+The build needs `mksquashfs` and an AppImage `runtime-x64` stub. It
+searches anywhere under `~/.cache/electron-builder/` for both (left
+behind by any electron-builder AppImage build on this machine), and
+falls back to `appimagetool` on PATH if it can't find them.
+
+The runtime stub has to be a FUSE-free static build. Older cached
+runtimes `dlopen` `libfuse.so.2`, which Ubuntu 23.04+, current Fedora,
+openSUSE and the immutable spins no longer ship -- the AppImage builds
+without complaint and then refuses to start, which to a user reads as
+"I double-clicked it and nothing happened". `build.sh` rejects any
+runtime that mentions `libfuse.so.2` and prints the one it picked.
 
 ## Releasing a new version
 
@@ -107,6 +114,10 @@ one `.AppImage` attached).
      --title vX.Y.Z --notes "..."
    ```
    (with `GH_TOKEN` set to a token that has write access to this repo).
+
+Between steps 2 and 3, **launch the built AppImage and check the window
+actually opens.** A successful build proves nothing about whether it
+runs -- that's how the broken v1.1.0 release went out.
 
 ## Layout
 
