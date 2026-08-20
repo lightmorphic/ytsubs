@@ -10,7 +10,7 @@ from pathlib import Path
 
 import webview
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 UPDATE_REPO = "lightmorphic/ytsubs"
 RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 # Every release publishes two assets: this stable name (what the updater

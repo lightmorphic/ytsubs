@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.1.1
+
+- Fix the AppImage refusing to start on modern Linux. The build was
+  embedding an old AppImage runtime that needs FUSE 2, which Ubuntu
+  23.04+, current Fedora, openSUSE and the immutable spins no longer
+  ship -- so double-clicking the app did nothing at all. It now uses a
+  FUSE-free static runtime, and the build refuses to pick a FUSE 2 one
+  even if an old copy is lying around in the cache.
+- The build also copes with hosts whose python3 has no `ensurepip`.
+
 ## v1.1.0
 
 - Replace the separate version badge and Update button with Charlie's
