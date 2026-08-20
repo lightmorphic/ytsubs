@@ -14,7 +14,7 @@ Ships as a single AppImage, no install, no Docker, no VPS.
 - Light and dark theme, follows the desktop setting by default with a
   manual toggle in the header
 - Right-click paste on the URL field (pywebview hides the browser's own
-  context menu, so this is a small custom one backed by the GTK
+  context menu, so this is a small custom one backed by the Qt
   clipboard)
 - Checks for its own updates against this repo's GitHub releases: a
   green/yellow/red dot next to the version number, checked on launch,
@@ -33,24 +33,21 @@ chmod +x ytsubs-x86_64.AppImage
 
 ### System requirements
 
-The AppImage bundles its Python dependencies (pywebview, yt-dlp, pip,
-requests) but uses the **host's** `python3` and GTK WebKit stack to draw
-the window: `python3-gi`, `gir1.2-webkit2-4.1`, `libwebkit2gtk-4.1-0`.
-They're not bundled because that stack runs over 100MB on its own, and
-it's already installed on most Linux desktops.
+The AppImage carries everything it needs to draw its own window: Qt's
+WebEngine, the Qt platform plugins, and the Python packages (pywebview,
+yt-dlp, requests). Nothing is installed on the host and nothing is
+asked for.
 
-If they're missing, `AppRun` notices before opening the window and shows
-a native dialog (zenity, kdialog, or xmessage, whichever is available)
-explaining why and offering a one-click install via `pkexec` with the
-right package names for apt, dnf, pacman, or zypper. Cancel it and the
-app just doesn't launch; no window ever tries to open without its own
-GTK dependency underneath it. If none of those dialog tools are
-present, or the install fails, it falls back to printing the manual
-command, same as before:
+The one thing taken from the host is `python3` itself, which has to be
+3.10 or newer, because the bundled Qt wheels are built against that
+ABI. Every current Linux desktop ships one. If it's missing or too old,
+`AppRun` says so in a dialog rather than failing silently.
 
-```
-sudo apt install python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0
-```
+That self-containment is what makes the download ~145MB instead of
+~6MB. Up to v1.1.1 the app borrowed the host's GTK WebKit2 stack to
+stay small, and offered a one-click install when it wasn't there --
+but an AppImage that asks you to install something is the exact thing
+an AppImage is supposed to avoid.
 
 ## Keeping yt-dlp current
 
@@ -86,6 +83,13 @@ The build needs `mksquashfs` and an AppImage `runtime-x64` stub. It
 searches anywhere under `~/.cache/electron-builder/` for both (left
 behind by any electron-builder AppImage build on this machine), and
 falls back to `appimagetool` on PATH if it can't find them.
+
+`build.sh` also runs `packaging/prune-qt.py`, which walks the bundled
+Qt libraries' `DT_NEEDED` entries from the modules pywebview actually
+imports and deletes everything unreachable -- about 240MB of Qt the app
+never loads. The image is compressed with zstd, not xz: the FUSE-free
+runtime's squashfuse only understands zlib and zstd, so an xz image
+builds fine and then mounts nowhere.
 
 The runtime stub has to be a FUSE-free static build. Older cached
 runtimes `dlopen` `libfuse.so.2`, which Ubuntu 23.04+, current Fedora,

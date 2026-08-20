@@ -1,25 +1,18 @@
 #!/bin/bash
-# AppImages are meant to carry everything they need, but GTK + WebKit2GTK
-# together run well over 100MB and are already installed on most Linux
-# desktops, so they're not bundled here to keep the download small. If
-# they're missing, this offers a one-click install via a native dialog
-# instead of expecting anyone to read a README and run a command by hand.
+# Everything needed to draw the window ships inside this AppImage: Qt's
+# WebEngine, the Qt platform plugins, and the Python packages. Nothing gets
+# installed on the host and nothing is checked for -- earlier versions used
+# the host's GTK WebKit2 and asked to install it when missing, which is
+# exactly the thing an AppImage is supposed to spare you.
+#
+# The one thing still taken from the host is python3 itself, which every
+# Linux desktop ships. It has to be 3.10 or newer, because the bundled Qt
+# wheels are built against that ABI.
 set -e
 HERE="$(dirname "$(readlink -f "${0}")")"
 
 PY="$(command -v python3 || true)"
-if [ -z "$PY" ]; then
-  echo "YT Subs needs python3 installed on this system." >&2
-  exit 1
-fi
 
-deps_ok() {
-  "$PY" -c "import gi; gi.require_version('WebKit2', '4.1'); from gi.repository import WebKit2" >/dev/null 2>&1
-}
-
-# Pick whichever dialog tool is actually on this system. zenity/kdialog give
-# a real Install/Cancel choice; xmessage is a last-resort fallback that can
-# still return a yes/no via its exit code.
 dialog_tool() {
   if command -v zenity >/dev/null 2>&1; then echo zenity
   elif command -v kdialog >/dev/null 2>&1; then echo kdialog
@@ -28,62 +21,27 @@ dialog_tool() {
   fi
 }
 
-ask_to_install() {
-  local msg="YT Subs needs GTK's WebKit2 package to draw its window.\n\nIt isn't bundled in the AppImage because it (and its dependencies) run over 100MB, and it's already installed on most Linux desktops. Install it now?"
-  case "$(dialog_tool)" in
-    zenity)
-      zenity --question --title="YT Subs" --width=360 --text="$msg" --ok-label="Install" --cancel-label="Cancel"
-      ;;
-    kdialog)
-      kdialog --title "YT Subs" --yesno "$msg" --yes-label "Install" --no-label "Cancel"
-      ;;
-    xmessage)
-      xmessage -center -buttons "Install:0,Cancel:1" "$msg"
-      ;;
-    *)
-      return 1
-      ;;
-  esac
-}
-
 show_message() {
   case "$(dialog_tool)" in
-    zenity) zenity --info --title="YT Subs" --width=360 --text="$1" ;;
-    kdialog) kdialog --title "YT Subs" --msgbox "$1" ;;
+    zenity) zenity --error --title="YT Subs" --width=360 --text="$1" ;;
+    kdialog) kdialog --title "YT Subs" --error "$1" ;;
     xmessage) xmessage -center "$1" ;;
     *) echo "$1" >&2 ;;
   esac
 }
 
-# Maps to each distro's own package names for the same two things:
-# PyGObject and the WebKit2GTK 4.1 GObject-introspection bindings.
-install_deps() {
-  if command -v apt-get >/dev/null 2>&1; then
-    pkexec apt-get install -y python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0
-  elif command -v dnf >/dev/null 2>&1; then
-    pkexec dnf install -y python3-gobject webkit2gtk4.1
-  elif command -v pacman >/dev/null 2>&1; then
-    pkexec pacman -S --noconfirm --needed python-gobject webkit2gtk-4.1
-  elif command -v zypper >/dev/null 2>&1; then
-    pkexec zypper install -y python3-gobject webkit2gtk3-soup2
-  else
-    return 1
-  fi
-}
-
-if ! deps_ok; then
-  if ask_to_install; then
-    if install_deps && deps_ok; then
-      show_message "Installed. Launching YT Subs…"
-    else
-      show_message "Couldn't install it automatically on this system.\n\nOn Debian/Ubuntu, run:\nsudo apt install python3-gi gir1.2-webkit2-4.1 libwebkit2gtk-4.1-0\n\nSee the README for other distros."
-      exit 1
-    fi
-  else
-    exit 1
-  fi
+if [ -z "$PY" ] || ! "$PY" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+  show_message "YT Subs needs Python 3.10 or newer on this system.\n\nEvery current Linux desktop ships one; if yours doesn't, install your distribution's python3 package."
+  exit 1
 fi
 
 export PYTHONPATH="$HERE/usr/lib/pyapp${PYTHONPATH:+:$PYTHONPATH}"
 export PYTHONDONTWRITEBYTECODE=1
+
+# Chromium's own sandbox needs unprivileged user namespaces, which several
+# distributions restrict by default -- where they're off, it doesn't degrade,
+# it refuses to start. The page it renders is our own local UI, so the sandbox
+# buys nothing here and its absence costs nothing.
+export QTWEBENGINE_DISABLE_SANDBOX=1
+
 exec "$PY" "$HERE/usr/app/app.py" "$@"

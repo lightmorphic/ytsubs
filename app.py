@@ -10,7 +10,7 @@ from pathlib import Path
 
 import webview
 
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.2.0"
 UPDATE_REPO = "lightmorphic/ytsubs"
 RELEASES_API = f"https://api.github.com/repos/{UPDATE_REPO}/releases/latest"
 # Every release publishes two assets: this stable name (what the updater
@@ -318,7 +318,28 @@ class Api:
         # pywebview suppresses the browser's own right-click menu (so it can't
         # leak "Inspect Element"), which also takes native right-click paste
         # with it. The UI draws its own paste menu and calls this instead,
-        # reading the OS clipboard directly via GTK.
+        # reading the OS clipboard directly from the toolkit.
+        try:
+            from PySide6.QtCore import QTimer
+            from PySide6.QtWidgets import QApplication
+
+            app = QApplication.instance()
+            if app is not None:
+                # This runs on a js_api thread, and Qt's clipboard may only be
+                # touched from the thread that owns the application object.
+                # Passing `app` as the timer's context runs the read there.
+                done = threading.Event()
+                text = []
+
+                def read():
+                    text.append(QApplication.clipboard().text() or "")
+                    done.set()
+
+                QTimer.singleShot(0, app, read)
+                done.wait(2)
+                return text[0] if text else ""
+        except Exception:
+            pass
         try:
             from gi.repository import Gdk, Gtk
 
@@ -339,7 +360,15 @@ def main():
         height=600,
         min_size=(720, 480),
     )
-    webview.start()
+    # The AppImage carries its own Qt WebEngine, so nothing has to be
+    # installed on the host to draw the window. Outside the AppImage, fall
+    # back to whatever pywebview can find.
+    try:
+        import PySide6.QtWebEngineWidgets  # noqa: F401
+
+        webview.start(gui="qt")
+    except ImportError:
+        webview.start()
 
 
 if __name__ == "__main__":

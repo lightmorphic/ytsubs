@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.2.0
+
+- The AppImage now draws its own window. It bundles Qt's WebEngine
+  instead of borrowing the host's GTK WebKit2 stack, so it no longer
+  asks to install anything on first run -- which is the whole point of
+  an AppImage. The download goes from ~6MB to ~145MB; the app itself is
+  unchanged.
+- The only remaining host requirement is `python3` 3.10 or newer, which
+  every current Linux desktop ships. If it's missing or too old, that's
+  now said in a dialog rather than failing quietly.
+- Right-click paste reads the Qt clipboard, falling back to GTK when
+  running outside the AppImage.
+
 ## v1.1.1
 
 - Fix the AppImage refusing to start on modern Linux. The build was

@@ -41,17 +41,35 @@ if [ -z "$PIP" ]; then
   exit 1
 fi
 echo "Using pip: $PIP"
-$PIP install --quiet --upgrade --target "$APPDIR/usr/lib/pyapp" --no-compile pywebview yt-dlp pip requests
+# PySide6 carries its own Qt WebEngine, so the AppImage draws its own window
+# instead of borrowing the host's GTK WebKit2. That is most of the download
+# size; prune-qt.py cuts the unpacked bundle from ~650MB to ~400MB by dropping
+# the Qt modules this app never loads.
+$PIP install --quiet --upgrade --target "$APPDIR/usr/lib/pyapp" --no-compile \
+  pywebview yt-dlp pip requests qtpy PySide6-Essentials PySide6-Addons
 rm -rf /tmp/ytsubs-build-venv
+
+python3 packaging/prune-qt.py "$APPDIR/usr/lib/pyapp"
 
 ln -sf ytsubs.png "$APPDIR/.DirIcon"
 
-MKSQ="$(command -v mksquashfs || true)"
-if [ -z "$MKSQ" ]; then
-  MKSQ="$(find "$HOME/.cache/electron-builder" \
+# The image has to be zstd, so an mksquashfs that can only do gzip/xz is no
+# use here -- older cached copies are exactly that.
+MKSQ=""
+for cand in "$(command -v mksquashfs || true)" \
+  $(find "$HOME/.cache/electron-builder" \
     \( -path '*/linux-x64/mksquashfs' -o -path '*/linux/x64/mksquashfs' \) \
-    -type f 2>/dev/null | head -n 1)"
-fi
+    -type f 2>/dev/null); do
+  [ -x "$cand" ] || continue
+  # Capture first: `set -o pipefail` turns both the usage exit and grep -q's
+  # SIGPIPE into a false negative here.
+  caps="$("$cand" 2>&1 || true)"
+  if printf '%s' "$caps" | grep -qE '(^|[[:space:]])zstd([[:space:]]|$)'; then
+    MKSQ="$cand"
+    break
+  fi
+  echo "Skipping mksquashfs without zstd: $cand"
+done
 
 # Pick the first cached runtime-x64 with no libfuse.so.2 reference.
 RUNTIME=""
@@ -76,8 +94,10 @@ if [ -z "$MKSQ" ] || [ -z "$RUNTIME" ]; then
   command -v appimagetool >/dev/null || { echo "Need mksquashfs+runtime-x64 (from an electron-builder cache) or appimagetool on PATH"; exit 1; }
   ARCH=x86_64 appimagetool "$APPDIR" build/ytsubs-x86_64.AppImage
 else
+  # zstd, not xz: the FUSE-free runtime's squashfuse only understands zlib
+  # and zstd, and an xz image mounts nowhere.
   rm -f build/app.squashfs build/ytsubs-x86_64.AppImage
-  "$MKSQ" "$APPDIR" build/app.squashfs -root-owned -noappend -quiet
+  "$MKSQ" "$APPDIR" build/app.squashfs -root-owned -noappend -quiet -comp zstd -Xcompression-level 19
   cat "$RUNTIME" build/app.squashfs > build/ytsubs-x86_64.AppImage
   rm -f build/app.squashfs
 fi
